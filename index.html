@@ -109,8 +109,8 @@
         <div class="points-display">当前积分: <span id="points">0</span></div>
         <div class="relax-message">每天一分钟，快乐又放松</div>
         <button class="restart-button" onclick="restartGame()">重玩</button>
-        <audio id="backgroundMusic" loop>
-            <source src="https://www.example.com/music.mp3" type="audio/mp3">
+        <audio id="backgroundMusic" loop autoplay>
+            <source src="https://www.bensound.com/bensound-music/bensound-energy.mp3" type="audio/mp3">
             您的浏览器不支持音频播放。
         </audio>
         <button onclick="toggleMusic()" class="restart-button">切换背景音乐</button>
@@ -129,7 +129,8 @@
         let timerStarted = false;
         let timerInterval;
         let leaderboard = [];
-        let musicPlaying = false;
+        let musicPlaying = true;
+        const backgroundMusic = document.getElementById('backgroundMusic');
 
         function startTimer() {
             timerInterval = setInterval(function () {
@@ -156,4 +157,54 @@
             if (clickCount % 10 === 0) {
                 points += 10; // 每第10次点击加10分
             } else {
-                points += 1; // 其他
+                points += 1; // 其他情况加1分
+            }
+
+            document.getElementById('points').innerText = points;
+        }
+
+        function toggleMusic() {
+            if (musicPlaying) {
+                backgroundMusic.pause();
+                musicPlaying = false;
+            } else {
+                backgroundMusic.play();
+                musicPlaying = true;
+            }
+        }
+
+        function restartGame() {
+            clearInterval(timerInterval);
+            points = 0;
+            clickCount = 0;
+            timeLeft = 60;
+            timerStarted = false;
+            document.getElementById('points').innerText = points;
+            document.getElementById('timer').innerText = timeLeft;
+            document.getElementById('scoreBox').onclick = incrementScore;
+        }
+
+        function saveScoreToLeaderboard(score) {
+            const username = prompt("请输入您的姓名进行排行：", "匿名玩家");
+            if (username) {
+                leaderboard.push({ name: username, score: score });
+                leaderboard.sort((a, b) => b.score - a.score); // 按积分从高到低排序
+                leaderboard = leaderboard.slice(0, 100); // 只保留前100名
+                updateLeaderboard();
+            }
+        }
+
+        function updateLeaderboard() {
+            const leaderboardList = document.getElementById('leaderboard-list');
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                item.textContent = `${index + 1}. ${entry.name} - ${entry.score} 分`;
+                leaderboardList.appendChild(item);
+            });
+        }
+    </script>
+</body>
+
+</html>
