@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>轻松点一点</title>
+    <title>解压小游戏</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -28,60 +28,27 @@
             margin-bottom: 20px;
         }
 
-        .score-box {
-            width: 100px;
-            height: 100px;
-            margin: 20px auto;
-            background-color: #007bff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 8px;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            transition: transform 0.1s ease, background-color 0.1s ease;
+        .game-select {
+            margin-bottom: 20px;
         }
 
-        .score-box:active {
-            transform: scale(0.95);
+        .game-button {
+            padding: 10px 20px;
+            margin: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .game-button:hover {
             background-color: #0056b3;
         }
 
-        .points-display {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-
-        .timer-display {
-            margin-top: 10px;
-            font-size: 18px;
-            color: red;
-        }
-
-        .relax-message {
-            margin-top: 10px;
-            font-size: 16px;
-            color: #555;
-        }
-
-        .leaderboard {
-            margin-top: 20px;
-            font-size: 18px;
-            text-align: left;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .leaderboard-title {
-            font-size: 20px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .leaderboard-item {
-            padding: 5px 10px;
-            border-bottom: 1px solid #ddd;
+        .game-container {
+            display: none;
         }
 
         .restart-button {
@@ -103,22 +70,27 @@
 
 <body>
     <div class="container">
-        <div class="title">轻松点一点</div>
-        <div class="timer-display">倒计时: <span id="timer">60</span> 秒</div>
-        <div class="score-box" id="scoreBox" onclick="incrementScore()">点击我</div>
-        <div class="points-display">当前积分: <span id="points">0</span></div>
-        <div class="relax-message">每天一分钟，快乐又放松</div>
-        <button class="restart-button" onclick="restartGame()">重玩</button>
-        <audio id="backgroundMusic" loop autoplay>
-            <source src="https://www.bensound.com/bensound-music/bensound-energy.mp3" type="audio/mp3">
-            您的浏览器不支持音频播放。
-        </audio>
-        <button onclick="toggleMusic()" class="restart-button">切换背景音乐</button>
-        <div class="leaderboard">
-            <div class="leaderboard-title">点击排行榜（前100名）</div>
-            <div id="leaderboard-list">
-                <div class="leaderboard-item">暂无数据</div>
-            </div>
+        <div class="title">小游戏中心</div>
+        <div class="game-select">
+            <button class="game-button" onclick="selectGame('clicker')">点一点</button>
+            <button class="game-button" onclick="selectGame('snake')">贪吃蛇</button>
+        </div>
+
+        <!-- 点击得分游戏 -->
+        <div class="game-container" id="clicker-game">
+            <div class="title">轻松点一点</div>
+            <div class="timer-display">倒计时: <span id="timer">60</span> 秒</div>
+            <div class="score-box" id="scoreBox" onclick="incrementScore()">点击我</div>
+            <div class="points-display">当前积分: <span id="points">0</span></div>
+            <div class="relax-message">每天一分钟，快乐又放松</div>
+            <button class="restart-button" onclick="restartGame()">重玩</button>
+        </div>
+
+        <!-- 贪吃蛇游戏 -->
+        <div class="game-container" id="snake-game">
+            <div class="title">贪吃蛇游戏</div>
+            <canvas id="snakeCanvas" width="300" height="300" style="background-color: #f4f4f4;"></canvas>
+            <button class="restart-button" onclick="restartSnakeGame()">重玩</button>
         </div>
     </div>
 
@@ -128,10 +100,20 @@
         let timeLeft = 60;
         let timerStarted = false;
         let timerInterval;
-        let leaderboard = [];
-        let musicPlaying = true;
-        const backgroundMusic = document.getElementById('backgroundMusic');
 
+        function selectGame(game) {
+            document.getElementById('clicker-game').style.display = 'none';
+            document.getElementById('snake-game').style.display = 'none';
+
+            if (game === 'clicker') {
+                document.getElementById('clicker-game').style.display = 'block';
+            } else if (game === 'snake') {
+                document.getElementById('snake-game').style.display = 'block';
+                startSnakeGame();
+            }
+        }
+
+        // 点击得分游戏逻辑
         function startTimer() {
             timerInterval = setInterval(function () {
                 timeLeft--;
@@ -140,7 +122,6 @@
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     document.getElementById('scoreBox').onclick = null; // 禁用点击
-                    saveScoreToLeaderboard(points);
                     alert(`时间到！您的总积分是: ${points}`);
                 }
             }, 1000);
@@ -163,16 +144,6 @@
             document.getElementById('points').innerText = points;
         }
 
-        function toggleMusic() {
-            if (musicPlaying) {
-                backgroundMusic.pause();
-                musicPlaying = false;
-            } else {
-                backgroundMusic.play();
-                musicPlaying = true;
-            }
-        }
-
         function restartGame() {
             clearInterval(timerInterval);
             points = 0;
@@ -184,25 +155,63 @@
             document.getElementById('scoreBox').onclick = incrementScore;
         }
 
-        function saveScoreToLeaderboard(score) {
-            const username = prompt("请输入您的姓名进行排行：", "匿名玩家");
-            if (username) {
-                leaderboard.push({ name: username, score: score });
-                leaderboard.sort((a, b) => b.score - a.score); // 按积分从高到低排序
-                leaderboard = leaderboard.slice(0, 100); // 只保留前100名
-                updateLeaderboard();
+        // 贪吃蛇游戏逻辑
+        let snake;
+        let food;
+        let direction;
+        let snakeGameInterval;
+
+        function startSnakeGame() {
+            const canvas = document.getElementById('snakeCanvas');
+            const ctx = canvas.getContext('2d');
+            snake = [{ x: 150, y: 150 }];
+            food = { x: Math.floor(Math.random() * 15) * 20, y: Math.floor(Math.random() * 15) * 20 };
+            direction = 'right';
+
+            document.addEventListener('keydown', changeDirection);
+            snakeGameInterval = setInterval(updateSnakeGame, 100);
+
+            function changeDirection(event) {
+                const key = event.key;
+                if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
+                if (key === 'ArrowDown' && direction !== 'up') direction = 'down';
+                if (key === 'ArrowLeft' && direction !== 'right') direction = 'left';
+                if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
+            }
+
+            function updateSnakeGame() {
+                const head = { ...snake[0] };
+                if (direction === 'up') head.y -= 20;
+                if (direction === 'down') head.y += 20;
+                if (direction === 'left') head.x -= 20;
+                if (direction === 'right') head.x += 20;
+
+                if (head.x === food.x && head.y === food.y) {
+                    food = { x: Math.floor(Math.random() * 15) * 20, y: Math.floor(Math.random() * 15) * 20 };
+                } else {
+                    snake.pop();
+                }
+
+                if (head.x < 0 || head.y < 0 || head.x >= 300 || head.y >= 300 || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                    clearInterval(snakeGameInterval);
+                    alert('游戏结束！');
+                    return;
+                }
+
+                snake.unshift(head);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'red';
+                ctx.fillRect(food.x, food.y, 20, 20);
+
+                ctx.fillStyle = 'green';
+                snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
             }
         }
 
-        function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '';
-            leaderboard.forEach((entry, index) => {
-                const item = document.createElement('div');
-                item.className = 'leaderboard-item';
-                item.textContent = `${index + 1}. ${entry.name} - ${entry.score} 分`;
-                leaderboardList.appendChild(item);
-            });
+        function restartSnakeGame() {
+            clearInterval(snakeGameInterval);
+            startSnakeGame();
         }
     </script>
 </body>
