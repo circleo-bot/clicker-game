@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解压小游戏</title>
+    <title>小游戏中心</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,7 +52,7 @@
         }
 
         .restart-button {
-            margin-top: 20px;
+            margin-top: 10px;
             padding: 10px 20px;
             background-color: #28a745;
             color: white;
@@ -65,6 +65,29 @@
         .restart-button:hover {
             background-color: #218838;
         }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .tetris-controls {
+            margin-top: 10px;
+        }
+
+        .control-button {
+            padding: 10px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .control-button:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 
@@ -72,146 +95,142 @@
     <div class="container">
         <div class="title">小游戏中心</div>
         <div class="game-select">
-            <button class="game-button" onclick="selectGame('clicker')">点一点</button>
+            <button class="game-button" onclick="selectGame('clicker')">轻松点一点</button>
             <button class="game-button" onclick="selectGame('snake')">贪吃蛇</button>
+            <button class="game-button" onclick="selectGame('shooter')">射击游戏</button>
+            <button class="game-button" onclick="selectGame('tetris')">俄罗斯方块</button>
         </div>
 
-        <!-- 点击得分游戏 -->
-        <div class="game-container" id="clicker-game">
-            <div class="title">轻松点一点</div>
-            <div class="timer-display">倒计时: <span id="timer">60</span> 秒</div>
-            <div class="score-box" id="scoreBox" onclick="incrementScore()">点击我</div>
-            <div class="points-display">当前积分: <span id="points">0</span></div>
-            <div class="relax-message">每天一分钟，快乐又放松</div>
-            <button class="restart-button" onclick="restartGame()">重玩</button>
-        </div>
-
-        <!-- 贪吃蛇游戏 -->
-        <div class="game-container" id="snake-game">
-            <div class="title">贪吃蛇游戏</div>
-            <canvas id="snakeCanvas" width="300" height="300" style="background-color: #f4f4f4;"></canvas>
-            <button class="restart-button" onclick="restartSnakeGame()">重玩</button>
+        <!-- 俄罗斯方块游戏 -->
+        <div class="game-container" id="tetris-game">
+            <div class="title">俄罗斯方块游戏</div>
+            <canvas id="tetrisCanvas" width="200" height="400" style="background-color: #f4f4f4;"></canvas>
+            <div class="tetris-controls">
+                <button class="control-button" onclick="rotatePiece()">旋转</button>
+                <button class="control-button" onclick="moveLeft()">左移</button>
+                <button class="control-button" onclick="moveRight()">右移</button>
+                <button class="control-button" onclick="moveDown()">加速下落</button>
+            </div>
+            <div>
+                <button class="restart-button" onclick="restartTetrisGame()">重玩</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let points = 0;
-        let clickCount = 0;
-        let timeLeft = 60;
-        let timerStarted = false;
-        let timerInterval;
+        const COLS = 10;
+        const ROWS = 20;
+        const BLOCK_SIZE = 20;
+        let tetrisBoard;
+        let tetrisInterval;
+        let currentPiece;
+
+        const shapes = [
+            [[1, 1, 1], [0, 1, 0]], // T 形
+            [[1, 1], [1, 1]], // O 形
+            [[0, 1, 1], [1, 1, 0]], // Z 形
+            [[1, 1, 0], [0, 1, 1]], // S 形
+            [[1, 1, 1, 1]], // I 形
+            [[1, 0, 0], [1, 1, 1]], // L 形
+            [[0, 0, 1], [1, 1, 1]] // 反 L 形
+        ];
+
+        function createPiece() {
+            const shape = shapes[Math.floor(Math.random() * shapes.length)];
+            return {
+                shape,
+                row: 0,
+                col: Math.floor((COLS - shape[0].length) / 2),
+            };
+        }
+
+        function drawBoard(ctx) {
+            ctx.clearRect(0, 0, COLS * BLOCK_SIZE, ROWS * BLOCK_SIZE);
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (tetrisBoard[r][c]) {
+                        ctx.fillStyle = 'blue';
+                        ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+        }
+
+        function drawPiece(ctx, piece) {
+            ctx.fillStyle = 'red';
+            piece.shape.forEach((row, r) => {
+                row.forEach((cell, c) => {
+                    if (cell) {
+                        ctx.fillRect((piece.col + c) * BLOCK_SIZE, (piece.row + r) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                });
+            });
+        }
+
+        function movePiece(offsetRow, offsetCol) {
+            currentPiece.row += offsetRow;
+            currentPiece.col += offsetCol;
+        }
+
+        function rotatePiece() {
+            const shape = currentPiece.shape;
+            const rotatedShape = shape[0].map((_, index) => shape.map(row => row[index]).reverse());
+            currentPiece.shape = rotatedShape;
+        }
+
+        function moveLeft() {
+            movePiece(0, -1);
+            drawBoardAndPiece();
+        }
+
+        function moveRight() {
+            movePiece(0, 1);
+            drawBoardAndPiece();
+        }
+
+        function moveDown() {
+            movePiece(1, 0);
+            drawBoardAndPiece();
+        }
+
+        function drawBoardAndPiece() {
+            const canvas = document.getElementById('tetrisCanvas');
+            const ctx = canvas.getContext('2d');
+            drawBoard(ctx);
+            drawPiece(ctx, currentPiece);
+        }
+
+        function startTetrisGame() {
+            const canvas = document.getElementById('tetrisCanvas');
+            const ctx = canvas.getContext('2d');
+            tetrisBoard = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+            currentPiece = createPiece();
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') moveLeft();
+                if (e.key === 'ArrowRight') moveRight();
+                if (e.key === 'ArrowDown') moveDown();
+                if (e.key === 'ArrowUp') rotatePiece();
+                drawBoardAndPiece();
+            });
+
+            tetrisInterval = setInterval(() => {
+                moveDown();
+                drawBoardAndPiece();
+            }, 500);
+        }
+
+        function restartTetrisGame() {
+            clearInterval(tetrisInterval);
+            startTetrisGame();
+        }
 
         function selectGame(game) {
-            document.getElementById('clicker-game').style.display = 'none';
-            document.getElementById('snake-game').style.display = 'none';
-
-            if (game === 'clicker') {
-                document.getElementById('clicker-game').style.display = 'block';
-            } else if (game === 'snake') {
-                document.getElementById('snake-game').style.display = 'block';
-                startSnakeGame();
+            document.getElementById('tetris-game').style.display = 'none';
+            if (game === 'tetris') {
+                document.getElementById('tetris-game').style.display = 'block';
+                startTetrisGame();
             }
-        }
-
-        // 点击得分游戏逻辑
-        function startTimer() {
-            timerInterval = setInterval(function () {
-                timeLeft--;
-                document.getElementById('timer').innerText = timeLeft;
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    document.getElementById('scoreBox').onclick = null; // 禁用点击
-                    alert(`时间到！您的总积分是: ${points}`);
-                }
-            }, 1000);
-        }
-
-        function incrementScore() {
-            if (!timerStarted) {
-                timerStarted = true;
-                startTimer();
-            }
-
-            clickCount++;
-
-            if (clickCount % 10 === 0) {
-                points += 10; // 每第10次点击加10分
-            } else {
-                points += 1; // 其他情况加1分
-            }
-
-            document.getElementById('points').innerText = points;
-        }
-
-        function restartGame() {
-            clearInterval(timerInterval);
-            points = 0;
-            clickCount = 0;
-            timeLeft = 60;
-            timerStarted = false;
-            document.getElementById('points').innerText = points;
-            document.getElementById('timer').innerText = timeLeft;
-            document.getElementById('scoreBox').onclick = incrementScore;
-        }
-
-        // 贪吃蛇游戏逻辑
-        let snake;
-        let food;
-        let direction;
-        let snakeGameInterval;
-
-        function startSnakeGame() {
-            const canvas = document.getElementById('snakeCanvas');
-            const ctx = canvas.getContext('2d');
-            snake = [{ x: 150, y: 150 }];
-            food = { x: Math.floor(Math.random() * 15) * 20, y: Math.floor(Math.random() * 15) * 20 };
-            direction = 'right';
-
-            document.addEventListener('keydown', changeDirection);
-            snakeGameInterval = setInterval(updateSnakeGame, 100);
-
-            function changeDirection(event) {
-                const key = event.key;
-                if (key === 'ArrowUp' && direction !== 'down') direction = 'up';
-                if (key === 'ArrowDown' && direction !== 'up') direction = 'down';
-                if (key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-                if (key === 'ArrowRight' && direction !== 'left') direction = 'right';
-            }
-
-            function updateSnakeGame() {
-                const head = { ...snake[0] };
-                if (direction === 'up') head.y -= 20;
-                if (direction === 'down') head.y += 20;
-                if (direction === 'left') head.x -= 20;
-                if (direction === 'right') head.x += 20;
-
-                if (head.x === food.x && head.y === food.y) {
-                    food = { x: Math.floor(Math.random() * 15) * 20, y: Math.floor(Math.random() * 15) * 20 };
-                } else {
-                    snake.pop();
-                }
-
-                if (head.x < 0 || head.y < 0 || head.x >= 300 || head.y >= 300 || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                    clearInterval(snakeGameInterval);
-                    alert('游戏结束！');
-                    return;
-                }
-
-                snake.unshift(head);
-
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = 'red';
-                ctx.fillRect(food.x, food.y, 20, 20);
-
-                ctx.fillStyle = 'green';
-                snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
-            }
-        }
-
-        function restartSnakeGame() {
-            clearInterval(snakeGameInterval);
-            startSnakeGame();
         }
     </script>
 </body>
