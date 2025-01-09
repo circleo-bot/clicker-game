@@ -83,6 +83,21 @@
             padding: 5px 10px;
             border-bottom: 1px solid #ddd;
         }
+
+        .restart-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .restart-button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 
@@ -93,6 +108,12 @@
         <div class="score-box" id="scoreBox" onclick="incrementScore()">点击我</div>
         <div class="points-display">当前积分: <span id="points">0</span></div>
         <div class="relax-message">每天一分钟，快乐又放松</div>
+        <button class="restart-button" onclick="restartGame()">重玩</button>
+        <audio id="backgroundMusic" loop>
+            <source src="https://www.example.com/music.mp3" type="audio/mp3">
+            您的浏览器不支持音频播放。
+        </audio>
+        <button onclick="toggleMusic()" class="restart-button">切换背景音乐</button>
         <div class="leaderboard">
             <div class="leaderboard-title">点击排行榜（前100名）</div>
             <div id="leaderboard-list">
@@ -108,6 +129,7 @@
         let timerStarted = false;
         let timerInterval;
         let leaderboard = [];
+        let musicPlaying = false;
 
         function startTimer() {
             timerInterval = setInterval(function () {
@@ -134,33 +156,4 @@
             if (clickCount % 10 === 0) {
                 points += 10; // 每第10次点击加10分
             } else {
-                points += 1; // 其他情况加1分
-            }
-
-            document.getElementById('points').innerText = points;
-        }
-
-        function saveScoreToLeaderboard(score) {
-            const username = prompt("请输入您的姓名进行排行：", "匿名玩家");
-            if (username) {
-                leaderboard.push({ name: username, score: score });
-                leaderboard.sort((a, b) => b.score - a.score); // 按积分从高到低排序
-                leaderboard = leaderboard.slice(0, 100); // 只保留前100名
-                updateLeaderboard();
-            }
-        }
-
-        function updateLeaderboard() {
-            const leaderboardList = document.getElementById('leaderboard-list');
-            leaderboardList.innerHTML = '';
-            leaderboard.forEach((entry, index) => {
-                const item = document.createElement('div');
-                item.className = 'leaderboard-item';
-                item.textContent = `${index + 1}. ${entry.name} - ${entry.score} 分`;
-                leaderboardList.appendChild(item);
-            });
-        }
-    </script>
-</body>
-
-</html>
+                points += 1; // 其他
